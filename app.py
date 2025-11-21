@@ -19,10 +19,10 @@ def load_artifacts():
         
 ensemble_model, tfidf = load_artifacts()
 
-AKURASI_MODEL = 91.00 
+AKURASI_MODEL = 92.00 
 
 st.set_page_config(page_title="Deteksi HOAX Indonesia (Super Accuracy)", layout="wide")
-st.title("⚔️ Deteksi HOAX: Akurasi Super 91.00%")
+st.title("⚔️ Deteksi HOAX: Akurasi Super 92.00%")
 st.subheader("Aplikasi Cerdas Klasifikasi Berita HOAX vs FAKTA")
 
 st.sidebar.header("Model Performance")
@@ -41,11 +41,12 @@ if st.button('🎯 Prediksi Status Berita'):
         st.warning("Mohon masukkan teks berita terlebih dahulu.")
     else:
         with st.spinner('Memproses dan memprediksi...'):
+
             processed_text = preprocess_text(input_text)
 
             input_vector = tfidf.transform([processed_text]) 
 
-            prediction = ensemble_model.predict(input_vector)[0]
+            prediction = ensemble_model.predict(input_vector)[0] 
 
             st.subheader("Hasil Klasifikasi")
             
