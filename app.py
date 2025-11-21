@@ -3,12 +3,13 @@ import pickle
 import re
 import pandas as pd
 import numpy as np
+from collections import Counter
 
-# --- 1. Fungsi Preprocessing (Data Mentah) ---
+# --- Fungsi Preprocessing ---
 def preprocess_text(text):
     return str(text).lower()
 
-# --- 2. Load Model dan Artifacts ---
+# --- Load Model dan Artifacts ---
 @st.cache_resource
 def load_artifacts():
     try:
@@ -24,7 +25,7 @@ ensemble_model, tfidf = load_artifacts()
 # Akurasi final yang harus ditampilkan
 AKURASI_MODEL = 92.00 
 
-# --- 3. Streamlit Interface ---
+# --- Streamlit Interface ---
 st.set_page_config(page_title="Deteksi HOAX Indonesia (Super Accuracy)", layout="wide")
 st.title("⚔️ Deteksi HOAX: Akurasi Super 92.00%")
 st.subheader("Aplikasi Cerdas Klasifikasi Berita HOAX vs FAKTA")
@@ -39,11 +40,9 @@ else:
 
 # 5. Input Data Form
 st.header("Input Teks Berita Baru")
-
-# KODE YANG MEMBUAT TEXT AREA (SUDAH DIPASTIKAN BENAR)
 input_text = st.text_area("Masukkan Teks Berita yang Ingin Divalidasi:", 
                           "Contoh: Minyak goreng dari sawit dapat menyembuhkan semua penyakit virus yang baru-baru ini menyebar.", 
-                          height=150) # Menambah tinggi agar lebih terlihat
+                          height=150)
 
 if st.button('🎯 Prediksi Status Berita'):
     if not input_text:
@@ -51,11 +50,25 @@ if st.button('🎯 Prediksi Status Berita'):
     else:
         with st.spinner('Memproses dan memprediksi...'):
             processed_text = preprocess_text(input_text)
-            input_vector = tfidf.transform([processed_text]) 
             
-            # KODE INI AKAN BEKERJA KARENA MODEL DILATIH DENGAN VOTING='HARD'
-            prediction = ensemble_model.predict(input_vector)[0] 
+            # ----------------------------------------------------
+            # PERBAIKAN KRITIS: KONVERSI KE DENSE (MATCH TRAINING DATA)
+            # ----------------------------------------------------
+            input_sparse = tfidf.transform([processed_text])
+            input_vector = input_sparse.toarray() # <-- FIX FINAL!
+
+            # Manual Hard Voting (untuk menghindari semua bug)
+            predictions = [
+                estimator.predict(input_vector)[0] 
+                for estimator in ensemble_model.estimators_
+            ]
             
+            # Ambil suara terbanyak
+            final_vote = Counter(predictions).most_common(1)[0][0]
+            
+            prediction = final_vote
+            
+            # 9. Result
             st.subheader("Hasil Klasifikasi")
             
             if prediction == 1:
