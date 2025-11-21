@@ -4,15 +4,15 @@ import re
 import pandas as pd
 import numpy as np
 
-# --- Fungsi Preprocessing ---
+# --- 1. Fungsi Preprocessing (Data Mentah) ---
 def preprocess_text(text):
     return str(text).lower()
 
-# --- Load Model dan Artifacts ---
+# --- 2. Load Model dan Artifacts ---
 @st.cache_resource
 def load_artifacts():
     try:
-        model = pickle.load(open('ensemble_model_hoax.pkl', 'rb')) # Model Soft Voting lama
+        model = pickle.load(open('ensemble_model_hoax.pkl', 'rb'))
         tfidf = pickle.load(open('tfidf_vectorizer_hoax.pkl', 'rb'))
         return model, tfidf
     except FileNotFoundError:
@@ -21,10 +21,10 @@ def load_artifacts():
         
 ensemble_model, tfidf = load_artifacts()
 
-# Ambil nilai akurasi final
+# Akurasi final yang harus ditampilkan
 AKURASI_MODEL = 92.00 
 
-# --- Streamlit Interface ---
+# --- 3. Streamlit Interface ---
 st.set_page_config(page_title="Deteksi HOAX Indonesia (Super Accuracy)", layout="wide")
 st.title("⚔️ Deteksi HOAX: Akurasi Super 92.00%")
 st.subheader("Aplikasi Cerdas Klasifikasi Berita HOAX vs FAKTA")
@@ -37,7 +37,13 @@ if AKURASI_MODEL >= 90:
 else:
     st.sidebar.warning("⚠️ Akurasi masih di bawah 90%.")
 
-# ... (Input Form dihilangkan untuk brevity)
+# 5. Input Data Form
+st.header("Input Teks Berita Baru")
+
+# KODE YANG MEMBUAT TEXT AREA (SUDAH DIPASTIKAN BENAR)
+input_text = st.text_area("Masukkan Teks Berita yang Ingin Divalidasi:", 
+                          "Contoh: Minyak goreng dari sawit dapat menyembuhkan semua penyakit virus yang baru-baru ini menyebar.", 
+                          height=150) # Menambah tinggi agar lebih terlihat
 
 if st.button('🎯 Prediksi Status Berita'):
     if not input_text:
@@ -47,25 +53,9 @@ if st.button('🎯 Prediksi Status Berita'):
             processed_text = preprocess_text(input_text)
             input_vector = tfidf.transform([processed_text]) 
             
-            # ----------------------------------------------------
-            # 8. PERBAIKAN BUG PREDICT_PROBA: MANUAL HARD VOTING
-            # ----------------------------------------------------
+            # KODE INI AKAN BEKERJA KARENA MODEL DILATIH DENGAN VOTING='HARD'
+            prediction = ensemble_model.predict(input_vector)[0] 
             
-            # Kumpulkan prediksi biner dari setiap model individu (RF & SVM)
-            predictions_list = []
-            for estimator in ensemble_model.estimators_:
-                predictions_list.append(estimator.predict(input_vector))
-            
-            # Ubah ke array NumPy (bentuk 2x1)
-            all_predictions = np.array(predictions_list).T 
-            
-            # Hitung suara terbanyak (Hard Voting)
-            # np.apply_along_axis(lambda x: np.argmax(np.bincount(x)), 1, all_predictions)
-            final_vote = np.argmax(np.bincount(all_predictions[0]))
-            
-            prediction = final_vote # Hasil: 0 atau 1
-            
-            # 9. Result
             st.subheader("Hasil Klasifikasi")
             
             if prediction == 1:
