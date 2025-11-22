@@ -13,7 +13,7 @@ def preprocess_text(text):
 def load_artifacts():
     try:
         # Nama file PKL baru
-        model = pickle.load(open('ensemble_model_FINAL.pkl', 'rb')) 
+        model = pickle.load(open('ensemble_model_hoax.pkl', 'rb')) 
         tfidf = pickle.load(open('tfidf_vectorizer_hoax.pkl', 'rb'))
         return model, tfidf
     except FileNotFoundError:
