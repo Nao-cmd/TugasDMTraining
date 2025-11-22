@@ -3,8 +3,6 @@ import pickle
 import re
 import pandas as pd
 import numpy as np
-from collections import Counter
-from scipy.sparse import csr_matrix # Diperlukan untuk perbaikan ini
 
 # --- Fungsi Preprocessing ---
 def preprocess_text(text):
@@ -14,7 +12,8 @@ def preprocess_text(text):
 @st.cache_resource
 def load_artifacts():
     try:
-        model = pickle.load(open('ensemble_model_hoax.pkl', 'rb'))
+        # Nama file PKL baru
+        model = pickle.load(open('ensemble_model_FINAL.pkl', 'rb')) 
         tfidf = pickle.load(open('tfidf_vectorizer_hoax.pkl', 'rb'))
         return model, tfidf
     except FileNotFoundError:
@@ -23,12 +22,13 @@ def load_artifacts():
         
 ensemble_model, tfidf = load_artifacts()
 
-# Akurasi final yang harus ditampilkan
+# Akurasi final (Gunakan hasil dari output training GBC+RF)
+# Harap ganti 92.00 dengan angka hasil training yang baru
 AKURASI_MODEL = 92.00 
 
 # --- Streamlit Interface ---
 st.set_page_config(page_title="Deteksi HOAX Indonesia (Super Accuracy)", layout="wide")
-st.title("⚔️ Deteksi HOAX: Akurasi Super 92.00%")
+st.title("⚔️ Deteksi HOAX: Akurasi Super (RF + GBC)")
 st.subheader("Aplikasi Cerdas Klasifikasi Berita HOAX vs FAKTA")
 
 # 4. Model Performance (Di Sidebar)
@@ -52,22 +52,12 @@ if st.button('🎯 Prediksi Status Berita'):
         with st.spinner('Memproses dan memprediksi...'):
             processed_text = preprocess_text(input_text)
             
-            # ----------------------------------------------------
-            # PERBAIKAN KRITIS: INPUT HARUS SPARSE (CSR Matrix)
-            # ----------------------------------------------------
-            # Model SVC secara anomali meminta data Sparse di lingkungan ini.
-            input_vector_sparse = tfidf.transform([processed_text])
+            # PERBAIKAN KRITIS: Mengonversi input ke Dense
+            input_sparse = tfidf.transform([processed_text])
+            input_vector = input_sparse.toarray() 
             
-            # Manual Hard Voting (Menggunakan input Sparse yang diminta)
-            predictions = [
-                estimator.predict(input_vector_sparse)[0] 
-                for estimator in ensemble_model.estimators_
-            ]
-            
-            # Ambil suara terbanyak
-            final_vote = Counter(predictions).most_common(1)[0][0]
-            
-            prediction = final_vote
+            # 8. Prediksi (menggunakan voting='soft' yang sekarang stabil)
+            prediction = ensemble_model.predict(input_vector)[0]
             
             # 9. Result
             st.subheader("Hasil Klasifikasi")
