@@ -24,7 +24,7 @@ ensemble_model, tfidf = load_artifacts()
 
 # Akurasi final (Gunakan hasil dari output training GBC+RF)
 # Harap ganti 92.00 dengan angka hasil training yang baru
-AKURASI_MODEL = 92.00 
+AKURASI_MODEL = 91.00 
 
 # --- Streamlit Interface ---
 st.set_page_config(page_title="Deteksi HOAX Indonesia (Super Accuracy)", layout="wide")
