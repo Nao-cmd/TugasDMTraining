@@ -50,21 +50,28 @@ if st.button('🎯 Prediksi Status Berita'):
     else:
         with st.spinner('Memproses dan memprediksi...'):
             processed_text = preprocess_text(input_text)
+            input_vector = tfidf.transform([processed_text]) 
             
             # ----------------------------------------------------
-            # PERBAIKAN KRITIS: KONVERSI KE DENSE (MATCH TRAINING DATA)
+            # 8. PERBAIKAN BIAS: MANUAL HARD VOTING DENGAN TIE-BREAKER
             # ----------------------------------------------------
-            input_sparse = tfidf.transform([processed_text])
-            input_vector = input_sparse.toarray() # <-- FIX FINAL!
-
-            # Manual Hard Voting (untuk menghindari semua bug)
+            
+            # Kumpulkan prediksi biner dari setiap model individu (RF dan SVM)
             predictions = [
                 estimator.predict(input_vector)[0] 
                 for estimator in ensemble_model.estimators_
             ]
             
-            # Ambil suara terbanyak
-            final_vote = Counter(predictions).most_common(1)[0][0]
+            vote_counts = Counter(predictions)
+            
+            # Jika ada 2 estimator, suara terbanyak adalah 2 atau 1.
+            # Jika suara 1 (artinya 1 suara HOAX dan 1 suara FAKTA), kita berikan TIE-BREAKER ke FAKTA (0)
+            if vote_counts.get(1, 0) > vote_counts.get(0, 0):
+                # Mayoritas memilih HOAX
+                final_vote = 1
+            else:
+                # Mayoritas memilih FAKTA, ATAU SUARA SAMA (TIE-BREAKER)
+                final_vote = 0
             
             prediction = final_vote
             
